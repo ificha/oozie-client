@@ -1,7 +1,7 @@
 {
-  "name": "oozie_nodejs",
+  "name": "oozie-client",
   "version": "1.0.0",
-  "description": "",
+  "description": "nodejs oozie client",
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -10,9 +10,6 @@
   "license": "ISC",
   "dependencies": {
     "fs": "0.0.2",
-    "https": "^1.0.0",
-    "jsontoxml": "0.0.11",
-    "node-oozie": "0.0.1",
     "q": "^1.4.1",
     "request": "^2.60.0",
     "underscore": "^1.8.3"
