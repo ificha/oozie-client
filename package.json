@@ -1,6 +1,6 @@
 {
   "name": "oozie-client",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "nodejs oozie client",
   "main": "app.js",
   "scripts": {
@@ -9,7 +9,15 @@
   "keywords": [
     "oozie-client"
   ],
-  "author": "",
+  "repository": {
+    "type": "git",
+    "url": "ificha/oozie-client"
+  },
+  "author": {
+    "name": "шашсрф",
+    "email": "",
+    "url": "https://github.com/ificha"
+  },  
   "license": "ISC",
   "dependencies": {
     "fs": "0.0.2",
