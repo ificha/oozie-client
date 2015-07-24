@@ -14,11 +14,11 @@
 			"stopOnEntry": false,
 			// Command line arguments passed to the program.
 			"args": [
-				// "--cluster", "tmp05",
-				// "--user", "god",
-				// "--pass", "P@ssw0rd01",
+				"--cluster", "tmp05",
+				"--user", "god",
+				"--pass", "P@ssw0rd01",
 				// "--save",
-				"--option", "jobs", "running"
+				"--option", "run", "job.properties"
 			],
 			// Workspace relative or absolute path to the working directory of the program being debugged. Default is the current workspace.
 			"cwd": ".",

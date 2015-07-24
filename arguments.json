@@ -25,7 +25,7 @@
 			"full": "option",
 			"short": "o",			
 			"value": true,				
-			"description": "options [status | jobs | job | run | log]"			
+			"description": "options [status | jobs <status> | job <job-id> | run <job.properties> | log <job-id>]"			
 		}
 	],
 	"defaults":{

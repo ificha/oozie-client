@@ -97,7 +97,7 @@ function processOptions(args) {
 
     switch (args.option) {
         case 'status':
-            getStatus(oozieClient);                
+            getStatus(oozieClient);
             break;
 
         case 'jobs':
@@ -126,7 +126,7 @@ function processOptions(args) {
 function logJob(oozieClient, jobId) {
     oozieClient.getJobLog(jobId)
         .then(function (jobLog) {
-            console.log(jobLog);            
+            console.log(jobLog);
         }, function (err) {
             console.error(err);
         });
@@ -157,7 +157,7 @@ function getJobs(oozieClient, status) {
         filteredWorkflows.forEach(function (wf) {
             console.log(wf.id + ' ' + wf.startTime + ' ' + wf.status);
         }, this);
-        
+
     }
 }
 
@@ -172,7 +172,7 @@ function checkJob(oozieClient, jobId) {
                 var action = jobDetails.actions[i];
                 console.log(action.name + ' ' + action.type + ' ' + action.status);
             }
-            
+
         }, function (err) {
             console.error(err);
         });
@@ -181,7 +181,7 @@ function checkJob(oozieClient, jobId) {
 // Run oozie job
 function runJob(oozieClient, filePath) {
 
-    fs.exists(filePath, function (isExist) {
+    if (fs.existsSync(filePath)) {
 
         fs.readFile(filePath, 'utf8', function (err, data) {
            
@@ -191,20 +191,23 @@ function runJob(oozieClient, filePath) {
             // Run job
             oozieClient.runJob(jobParams)
                 .then(function (response) {
-                    console.log(response.id);                    
+                    if (response)
+                        console.log(response.id);
+                    else 
+                        console.log('Failed (response is null)');
                 }, function (err) {
                     console.log(err);
                 });
         });
-    });
+    };
 }
 
 // Get oozie status
 function getStatus(oozieClient) {
 
-     oozieClient.getStatus()
+    oozieClient.getStatus()
         .then(function (status) {
-            console.log('Oozie status: ' + status.systemMode);            
+            console.log('Oozie status: ' + status.systemMode);
         }, function (err) {
             console.error(err);
         });
