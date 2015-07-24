@@ -32,6 +32,7 @@ node app.js -o run <job.properties file>
 where job.properties (example):
 
 {
+
      "nameNode": "wasb://<container_name>@<storage>.blob.core.windows.net",
      "jobTracker": "jobtrackerhost:9010",
      "queueName": "default",
