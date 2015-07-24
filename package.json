@@ -14,13 +14,14 @@
     "url": "ificha/oozie-client"
   },
   "author": {
-    "name": "шашсрф",
+    "name": "ificha",
     "email": "",
     "url": "https://github.com/ificha"
-  },  
+  },
   "license": "ISC",
   "dependencies": {
     "fs": "0.0.2",
+    "node-argument-parser": "^0.1.0",
     "q": "^1.4.1",
     "request": "^2.60.0",
     "underscore": "^1.8.3"

@@ -5,97 +5,135 @@
 var _ = require('underscore');
 var oozie = require('./oozie_api.js');
 var fs = require('fs');
+var q = require('q');
+var argumentParser = require("node-argument-parser");
 
-var args = process.argv;
-// Example (debug)
-//var args = ['node', 'app.js', 'https://<cluster_name>.azurehdinsight.net', 'user', 'password', 'status'];
+var _configFileName = './config.json';
 
-if (args.length < 5) {
-    printOptions();
-    process.exit();
+// enter point
+main();
+
+function main() {
+    parseArgs()
+        .then(function (args) {
+
+            processOptions(args);
+
+        }, function (err) {
+            console.log(err);
+        });
 }
 
-// Get creds
-var uri = args[2],
-    user = args[3],
-    password = args[4],
-    option = args[5];
+// Parse args from command line && merge with saved args from _configFileName
+function parseArgs() {
 
-// Create oozie client
-var oozieClient = oozie.createOozieClient({
-    uri: uri,
-    user: user,
-    pass: password
-});
+    var deffered = q.defer();
+    
+    // Parse args
+    var args = argumentParser.parse('./arguments.json', process);
+    
+    // Save args into config.json
+    if (args.save) {
+        args.help = undefined;
+        args.save = undefined;
+        var argsStr = JSON.stringify(args);
+        fs.writeFile(_configFileName, argsStr, function (err) {
+            if (err) {
+                console.log(err);
+                deffered.reject(err);
+            }
 
-// Check selected option
-switch (option) {
+            console.log('params were saved to config.json');
+            deffered.resolve(args);
+        });
+    } else {
 
-    case 'status':
-        getStatus();
-        break;
+        if (fs.existsSync(_configFileName)) {
+            
+            // Read params from config.json and combine
+            fs.readFile(_configFileName, 'utf8', function (err, data) {
 
-    case 'run':
-        if (args.length != 7) {
-            printOptions();
-            exitApp();
+                if (err) {
+                    deffered.reject(err);
+                }
+
+                var savedArgs = JSON.parse(data);
+                _.each(_.keys(savedArgs), function (key) {
+
+                    var savedVal = savedArgs[key];
+                    if (args[key] == undefined && savedVal != undefined)
+                        args[key] = savedVal;
+                });
+
+                deffered.resolve(args);
+            });
+        } else {
+            deffered.resolve(args);
         }
+    }
 
-        var filePath = args[6];
-        runJob(filePath);
-        break;
-
-    case 'check':
-
-        if (args.length != 7) {
-            printOptions();
-            exitApp();
-        }
-
-        var jobId = args[6];
-        checkJob(jobId);
-        break;
-
-    case 'jobs':
-
-        var status = null;
-        if (args.length == 7) {
-            status = args[6];
-        }
-        getJobs(status);
-        break;
-
-    case 'log':
-
-        if (args.length != 7) {
-            printOptions();
-            exitApp();
-        }
-
-        var jobId = args[6];
-        logJob(jobId);
-        break;
-
-    default:
-        printOptions();
-        exitApp();
-        break;
+    return deffered.promise;
 }
 
+
+function processOptions(args) {
+
+    if (!args.cluster || !args.user || !args.pass)
+        return console.log('cluster name, user and pass are required!');
+
+    if (!args.option)
+        return console.log('option is required');
+
+    // Create oozie client
+    var oozieClient = oozie.createOozieClient({
+        uri: _getClusterUri(args.cluster),
+        user: args.user,
+        pass: args.pass
+    });
+
+    // Get last arg (can be jobid, paramFile)
+    var cmdArgsAll = process.argv;
+    var lastArg = cmdArgsAll[cmdArgsAll.length - 1];
+
+    switch (args.option) {
+        case 'status':
+            getStatus(oozieClient);                
+            break;
+
+        case 'jobs':
+            getJobs(oozieClient, lastArg);
+            break;
+
+        case 'job':
+            checkJob(oozieClient, lastArg);
+            break;
+
+        case 'run':
+            runJob(oozieClient, lastArg);
+            break;
+
+        case 'log':
+            logJob(oozieClient, lastArg);
+            break;
+
+        default:
+            console.log('unknow option');
+            break;
+    }
+}
 
 // Get Job log
-function logJob(jobId) {
+function logJob(oozieClient, jobId) {
     oozieClient.getJobLog(jobId)
         .then(function (jobLog) {
-            console.log(jobLog);
-            exitApp();
+            console.log(jobLog);            
         }, function (err) {
             console.error(err);
         });
 }
 
 // Get jobs
-function getJobs(status) {
+function getJobs(oozieClient, status) {
 
     // Get Jobs 
     oozieClient.getJobs({})
@@ -107,22 +145,24 @@ function getJobs(status) {
 
     function processJobs(jobs) {
 
+        var knowStatus = ['succeeded', 'killed', 'failed', 'running', 'suspended']
+            .indexOf(status.toLowerCase()) != -1;
+
         var filteredWorkflows = jobs.workflows;
-        if (status != null)
+        if (knowStatus)
             filteredWorkflows = _.filter(jobs.workflows, function (workflow) {
                 return workflow.status.toLowerCase() == status.toLowerCase();
-            });                
+            });
 
         filteredWorkflows.forEach(function (wf) {
             console.log(wf.id + ' ' + wf.startTime + ' ' + wf.status);
         }, this);
-
-        exitApp();
+        
     }
 }
 
 // Check oozie job
-function checkJob(jobId) {
+function checkJob(oozieClient, jobId) {
 
     oozieClient.getJobInfo(jobId)
         .then(function (jobDetails) {
@@ -132,15 +172,14 @@ function checkJob(jobId) {
                 var action = jobDetails.actions[i];
                 console.log(action.name + ' ' + action.type + ' ' + action.status);
             }
-
-            exitApp();
+            
         }, function (err) {
             console.error(err);
         });
 }
 
 // Run oozie job
-function runJob(filePath) {
+function runJob(oozieClient, filePath) {
 
     fs.exists(filePath, function (isExist) {
 
@@ -152,8 +191,7 @@ function runJob(filePath) {
             // Run job
             oozieClient.runJob(jobParams)
                 .then(function (response) {
-                    console.log(response.id);
-                    exitApp();
+                    console.log(response.id);                    
                 }, function (err) {
                     console.log(err);
                 });
@@ -162,23 +200,16 @@ function runJob(filePath) {
 }
 
 // Get oozie status
-function getStatus() {
+function getStatus(oozieClient) {
 
-    oozieClient.getStatus()
+     oozieClient.getStatus()
         .then(function (status) {
-            console.log('Oozie status: ' + status.systemMode);
-            exitApp();
+            console.log('Oozie status: ' + status.systemMode);            
         }, function (err) {
             console.error(err);
         });
 }
 
-// App options
-function printOptions() {
-    console.log('<user> <pass> [status | run <job.properties> | check <jobId> | jobs <all | running | killed | succeeded | failed>]');
-}
-
-// Exit app
-function exitApp() {
-    process.exit();
+function _getClusterUri(name) {
+    return 'https://' + name + '.azurehdinsight.net';
 }

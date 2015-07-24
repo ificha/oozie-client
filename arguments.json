@@ -1,0 +1,35 @@
+{
+	"arguments":[
+		{
+			"full": "save",
+			"short": "s",
+			"value": false,
+			"description": "save params"
+		},
+		{
+			"full": "cluster",			
+			"value": true,				
+			"description": "hdinsight cluster name"			
+		},
+		{
+			"full": "user",			
+			"value": true,				
+			"description": "user"			
+		},
+		{
+			"full": "pass",			
+			"value": true,				
+			"description": "password"			
+		},
+		{
+			"full": "option",
+			"short": "o",			
+			"value": true,				
+			"description": "options [status | jobs | job | run | log]"			
+		}
+	],
+	"defaults":{
+		"help": true,
+		"helpExtras": ""
+	}
+}
